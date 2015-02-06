@@ -1,11 +1,12 @@
 package cyber_homework.game;
 
-import java.util.Calendar;
-import java.util.Date;
-
+/**
+ * 時間を計測するインスタンスを生成するクラスです
+ * @author Masayuki Yarimizu
+ *
+ */
 public class Timer {
 	
-	private Date date;
 	private long time;
 	private long sec;
 	private long min;

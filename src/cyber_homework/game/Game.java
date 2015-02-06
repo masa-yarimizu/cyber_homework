@@ -9,7 +9,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import cyber_homework.map.Stage;
-
+/**
+ * マインスイーパのゲームを処理するクラスです
+ * @author Masayuki Yarimizu
+ *
+ */
 public class Game {
 	
 	private final int INPUT_NUMBER = 3;
@@ -40,7 +44,6 @@ public class Game {
 					rowNumber = Integer.parseInt(rowInput);
 					break;
 				}
-				System.out.println(rowInput);//デバッグ
 				System.out.println("5から26の数字を入力してください。");
 			}
 
@@ -51,7 +54,6 @@ public class Game {
 					columnNumber = Integer.parseInt(columnInput);
 					break;
 				}
-				System.out.println(columnInput);//デバッグ
 				System.out.println("5から26の数字を入力してください。");
 			}
 
@@ -63,7 +65,6 @@ public class Game {
 					mineNumber = Integer.parseInt(mineInput);
 					break;
 				}
-				System.out.println(mineInput);//デバッグ
 				System.out.println("規定の範囲内の地雷の数を入力してください。");
 			}
 			
@@ -76,11 +77,10 @@ public class Game {
 			Timer timer = new Timer();
 			timer.setTime();
 
-			while(!isGameCleared(mstage.getPlainState())){
+			while(!isGameCleared(mstage.getPlainNumber())){
 				
 				//マップの表示
 				mstage.showStage();
-				System.out.println(mstage.getMinePoint());
 				
 				System.out.println("選択する列・行を選んでください");
 				//行列入力チェック
@@ -115,20 +115,25 @@ public class Game {
 								System.out.println("地雷を踏みました。ゲームオーバー。");
 								return;
 						} else {
-							int number = showMineNumber(inputColumn,inputRow,mstage);
-							if (number == 0) {
+							//周囲の地雷の数を表示
+							int aroundNumber = mstage.getAroundMineNumber(input);
+							if (aroundNumber == 0) {
 								mstage.setStageElement(inputColumn, inputRow, " ");
-								mstage.setPlainState(mstage.getPlainState() -1);
+								mstage.setPlainNumber(mstage.getPlainNumber() -1);
+								openNextSquare(inputColumn, inputRow, mstage);
 								break;
 							} else {
-								mstage.setStageElement(inputColumn, inputRow, String.valueOf(number));
-								mstage.setPlainState(mstage.getPlainState() -1);
+								mstage.setStageElement(inputColumn, inputRow, String.valueOf(aroundNumber));
+								mstage.setPlainNumber(mstage.getPlainNumber() -1);
 								break;
 							}
 						}
 					case "x":
 						if (mstage.getStageElement(inputColumn, inputRow).equals("X")) {
 							mstage.setStageElement(inputColumn, inputRow, "?");
+						} else if (!mstage.getStageElement(inputColumn, inputRow).equals("?")) {
+							System.out.println("既に開いたマスです。");
+							break;
 						} else {
 							mstage.setStageElement(inputColumn, inputRow, "X");
 				
@@ -282,174 +287,115 @@ public class Game {
 	}
 	
 	/**
-	 * 開いたマスの周りの地雷の数を返すメソッド
+	 * 周囲に地雷がないマスの隣接するマスを自動的に開くメソッド
 	 * @param column
 	 * @param row
 	 * @param stage
-	 * @return
 	 */
-	private Integer showMineNumber(String column, int row, Stage stage) {
-		char point = column.charAt(0);
-		//String point;
-		if (row == 0) {
-			if (column.equals("a")) {
-				int counter = 0;
-				System.out.println(point);
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row + 1)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(++point) + String.valueOf(row)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row + 1)) != -1) {
-					counter++;
-				}
-				return counter;
-				
-			} else if (column.equals(stage.getColumnMax())) {
-				int counter = 0;
-				System.out.println(point);
-				if (stage.getMinePoint().indexOf(String.valueOf(--point) + String.valueOf(row)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row + 1)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(++point) + String.valueOf(row +1)) != -1) {
-					counter++;
-				}
-				return counter;
-			} else {
-				int counter = 0;
-				if (stage.getMinePoint().indexOf(String.valueOf(--point) + String.valueOf(row)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row +1 )) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(++point) + String.valueOf(row + 1)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(++point) + String.valueOf(row)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row + 1)) != -1) {
-					counter++;
-				}
-				return counter;
-			}
+	private void openNextSquare(String column, int row, Stage stage) {
 
-		} else if (row == stage.getRowMax()) {
-			if (column.equals("a")) {
-				int counter = 0;
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row - 1)) != -1) {
-					counter++;
+		char point = column.charAt(0);
+		char pointLeft = --point;
+		char pointCenter = ++point;
+		char pointRight = ++point;
+		int aroundNumber;
+		
+		String point_0 = String.valueOf(pointLeft) + String.valueOf(row - 1);
+		String point_1 = String.valueOf(pointLeft) + String.valueOf(row);
+		String point_2 = String.valueOf(pointLeft) + String.valueOf(row + 1);
+		String point_3 = String.valueOf(pointCenter) + String.valueOf(row - 1);
+		String point_4 = String.valueOf(pointCenter) + String.valueOf(row + 1);
+		String point_5 = String.valueOf(pointRight) + String.valueOf(row - 1);
+		String point_6 = String.valueOf(pointRight) + String.valueOf(row);
+		String point_7 = String.valueOf(pointRight) + String.valueOf(row + 1);
+		
+		
+		for (int i = 0; i < 8; i++) {
+			
+			if (i < 3) {		
+				aroundNumber = stage.getAroundMineNumber(String.valueOf(pointLeft) + String.valueOf((row - 1) + i));
+				if (aroundNumber == 0) {
+					if (!stage.getStageElement(String.valueOf(pointLeft), (row - 1) + i).equals("?")) {
+						continue;
+					} else {
+						stage.setStageElement(String.valueOf(pointLeft), (row - 1) + i, " ");
+						stage.setPlainNumber(stage.getPlainNumber() - 1);
+						openNextSquare(String.valueOf(pointLeft), (row - 1) + i, stage);
+					}
+				} else if (aroundNumber == 9) {
+					continue;
+				} else {
+					if (!stage.getStageElement(String.valueOf(pointLeft), (row-1) + i).equals("?")) {
+						continue;
+					} else {
+						stage.setStageElement(String.valueOf(pointLeft), (row - 1) + i, String.valueOf(aroundNumber));
+						stage.setPlainNumber(stage.getPlainNumber() - 1);
+					}
 				}
-				if (stage.getMinePoint().indexOf(String.valueOf(++point) + String.valueOf(row - 1)) != -1) {
-					counter++;
+			} else if (i == 3) {
+				aroundNumber = stage.getAroundMineNumber(String.valueOf(pointCenter) + String.valueOf(row - 1));
+
+				if (aroundNumber == 0) {
+					if (!stage.getStageElement(String.valueOf(pointCenter), (row-1)).equals("?")) {
+						continue;
+					} else {
+						stage.setStageElement(String.valueOf(pointCenter), (row - 1), " ");
+						stage.setPlainNumber(stage.getPlainNumber() - 1);
+						openNextSquare(String.valueOf(pointCenter), (row - 1), stage);
+					}
+				} else if (aroundNumber == 9) {
+					continue;
+				} else {
+					if (!stage.getStageElement(String.valueOf(pointCenter), (row - 1)).equals("?")) {
+						continue;
+					} else {
+						stage.setStageElement(String.valueOf(pointCenter), (row - 1), String.valueOf(aroundNumber));
+						stage.setPlainNumber(stage.getPlainNumber() - 1);
+					}
 				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row )) != -1) {
-					counter++;
+			} else if (i == 4) {
+				aroundNumber = stage.getAroundMineNumber(String.valueOf(pointCenter) + String.valueOf(row + 1));
+				if (aroundNumber == 0) {
+					if (!stage.getStageElement(String.valueOf(pointCenter), (row + 1)).equals("?")) {
+						continue;
+					} else {
+						stage.setStageElement(String.valueOf(pointCenter), (row + 1), " ");
+						stage.setPlainNumber(stage.getPlainNumber() - 1);
+						openNextSquare(String.valueOf(pointCenter), (row + 1), stage);
+					}
+				} else if (aroundNumber == 9) {
+					continue;
+				} else {
+					if (!stage.getStageElement(String.valueOf(pointCenter), (row + 1)).equals("?")) {
+						continue;
+					} else {
+						stage.setStageElement(String.valueOf(pointCenter), (row + 1), String.valueOf(aroundNumber));
+						stage.setPlainNumber(stage.getPlainNumber() - 1);
+					}
 				}
-				
-				return counter;
-			} else if (column.equals(stage.getColumnMax())) {
-				int counter = 0;
-				if (stage.getMinePoint().indexOf(String.valueOf(--point) + String.valueOf(row - 1)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(++point) + String.valueOf(row - 1)) != -1) {
-					counter++;
-				}
-				System.out.println("bottum");
-				return counter;
+
 			} else {
-				int counter = 0;
-				if (stage.getMinePoint().indexOf(String.valueOf(--point) + String.valueOf(row)) != -1) {
-					counter++;
+				aroundNumber = stage.getAroundMineNumber(String.valueOf(pointRight) + String.valueOf((row - 6) + i));
+				if (aroundNumber == 0) {
+					if (!stage.getStageElement(String.valueOf(pointRight), (row - 6) + i).equals("?")) {
+						continue;
+					} else {
+						stage.setStageElement(String.valueOf(pointRight), (row - 6) + i, " ");
+						stage.setPlainNumber(stage.getPlainNumber() - 1);
+						openNextSquare(String.valueOf(pointRight), (row - 6) + i, stage);
+					}
+				} else if (aroundNumber == 9) {
+					continue;
+				} else {
+					if (!stage.getStageElement(String.valueOf(pointRight), (row - 6) + i).equals("?")) {
+						continue;
+					} else {
+						stage.setStageElement(String.valueOf(pointRight), (row - 6) + i, String.valueOf(aroundNumber));
+						stage.setPlainNumber(stage.getPlainNumber() - 1);
+					}
 				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row -1 )) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(++point) + String.valueOf(row - 1)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(++point) + String.valueOf(row - 1)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row )) != -1) {
-					counter++;
-				}
-				return counter;
-			} 	
-		} else {
-			if (column.equals("a")) {
-				int counter = 0;
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row - 1)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row + 1 )) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(++point) + String.valueOf(row - 1)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row + 1 )) != -1) {
-					counter++;
-				}
-				return counter;
-			} else if (column.equals(stage.getColumnMax())) {
-				int counter = 0;
-				if (stage.getMinePoint().indexOf(String.valueOf(--point) + String.valueOf(row - 1)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row + 1)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(++point) + String.valueOf(row - 1)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row + 1 )) != -1) {
-					counter++;
-				}
-				return counter;
-			} else {
-				int counter = 0;
-				if (stage.getMinePoint().indexOf(String.valueOf(--point) + String.valueOf(row - 1)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row + 1)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(++point) + String.valueOf(row - 1)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row + 1 )) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(++point) + String.valueOf(row - 1 )) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row)) != -1) {
-					counter++;
-				}
-				if (stage.getMinePoint().indexOf(String.valueOf(point) + String.valueOf(row + 1 )) != -1) {
-					counter++;
-				}
-				return counter;
 			}
 		}
+		
 	}
 }

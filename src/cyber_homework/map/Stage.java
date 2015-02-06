@@ -3,10 +3,11 @@ package cyber_homework.map;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 
 
 /**
- * 
+ * マインスイーパのマップのクラスです。
  * @author Masayuki Yarimizu
  *
  */
@@ -18,10 +19,10 @@ public class Stage {
 	private int stageColumnNumber;
 	private int mineNumber;
 	private String columnMax;
-	private int rowMax = stageRowNumber - 1;
-	private int plainState;
-	//private String[] minePoint = new String[mineNumber];
+	private int rowMax;
+	private int plainNumber;
 	private String[] minePoint;
+	private HashMap<String, Integer> answerMap;
 	
 	public String getStageElement(String column,int row) {
 		return String.valueOf(stage.get(row + 1).get(stage.get(0).indexOf(column)));
@@ -31,15 +32,15 @@ public class Stage {
 		stage.get(row + 1).set(stage.get(0).indexOf(column), a);
 	}
 	
-	public Integer getPlainState() {
-		return plainState;
+	public Integer getPlainNumber() {
+		return plainNumber;
 	}
 	
-	public void setPlainState(int plainCount) {
-		this.plainState = plainCount;
+	public void setPlainNumber(int plainCount) {
+		this.plainNumber = plainCount;
 	}
-	public void setPlainState() {
-		this.plainState = this.stageColumnNumber*this.stageRowNumber - this.mineNumber;
+	public void setPlainNumber() {
+		this.plainNumber = this.stageColumnNumber*this.stageRowNumber - this.mineNumber;
 	}
 	
 	public String getMinePoint() {
@@ -50,8 +51,16 @@ public class Stage {
 		return rowMax;
 	}
 	
+	public void setRowMax() {
+		this.rowMax = this.stageRowNumber - 1;
+	}
+	
 	public String getColumnMax() {
 		return columnMax;
+	}
+	
+	public void setColumnMax(String column) {
+		this.columnMax = column;
 	}
 	
 	public void setStageColumnNumber(int columnNumber) {
@@ -82,6 +91,15 @@ public class Stage {
 		this.minePoint = new String[mineNumber];
 	}
 	
+	public Integer getAroundMineNumber(String input) {
+		if (answerMap.get(input) == null) {
+			return 9;
+		} else {
+			return answerMap.get(input);
+		}
+	}
+	
+	
 	public void setDefoultOption(int rowNumber, int columnNumber, int mineNumber) {
 		this.stageRowNumber = rowNumber;
 		this.stageColumnNumber = columnNumber;
@@ -102,8 +120,11 @@ public class Stage {
 		for (int i = 0; i < stageColumnNumber; i++) {
 			header.add(String.valueOf(alph++));
 		}
-		//列の最大値を取得
-		this.columnMax = String.valueOf(--alph);
+		//列の最大値を設定
+		setColumnMax(String.valueOf(--alph));
+		//列の最大値を設定
+		setRowMax();
+		//this.columnMax = String.valueOf(--alph);
 		//ヘッダーを格納
 		stage.add(header);
 		//開かれていない部分を"？"で埋める。
@@ -120,11 +141,12 @@ public class Stage {
 			stage.add(row);
 		}
 		//平地を作成
-		setPlainState();
+		setPlainNumber();
 		setMinePoint(this.mineNumber);
 		//地雷を作成
 		createMine();
-
+		//答えの配列を作成
+		createAnswerMap();
 	}
 	
 	/**
@@ -154,6 +176,128 @@ public class Stage {
 		for (int k = 0; k < mineNumber; k ++) {
 			minePoint[k] = allPoint.get(k);
 		}
+	}
+	/**
+	 *　マスの周囲の地雷の数をハッシュマップに登録するメソッド
+	 */
+	private void createAnswerMap() {
+		try {
+			//全マスの行列をハッシュマップに登録
+			answerMap = new HashMap<String, Integer>();
+			char alph = 'a';
+			for (int i = 0; i < stageColumnNumber; i++) {
+				for (int j = 0; j < stageRowNumber; j++) {
+					answerMap.put(String.valueOf(alph) + String.valueOf(j), 0);
+				}
+				alph++;
+			}
+			//ハッシュマップにマスの周囲の地雷の数を登録する
+			for (int k = 0; k < mineNumber; k++) {
+				char columnAlph = minePoint[k].charAt(0);
+				String column = minePoint[k].substring(0,1);
+				int row = Integer.parseInt(minePoint[k].substring(1, 2));
+				int counter;
+				if (row == 0) {
+					if (column.equals("a")) {
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row + 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row + 1), ++counter);
+						counter = answerMap.get(String.valueOf(++columnAlph) + String.valueOf(row));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row + 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row + 1), ++counter);
+					} else if (column.equals(columnMax)) {
+						counter = answerMap.get(String.valueOf(--columnAlph) + String.valueOf(row));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row + 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row + 1), ++counter);
+						counter = answerMap.get(String.valueOf(++columnAlph) + String.valueOf(row + 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row + 1), ++counter);
+					} else {
+						counter = answerMap.get(String.valueOf(--columnAlph) + String.valueOf(row));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row + 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row + 1), ++counter);
+						counter = answerMap.get(String.valueOf(++columnAlph) + String.valueOf(row + 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row + 1), ++counter);
+						counter = answerMap.get(String.valueOf(++columnAlph) + String.valueOf(row + 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row + 1), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row), ++counter);
+					}
+				} else if (row == rowMax) {
+					if (column.equals("a")) {
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row - 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row - 1), ++counter);
+						counter = answerMap.get(String.valueOf(++columnAlph) + String.valueOf(row - 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row - 1), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row), ++counter);
+					} else if (column.equals(columnMax)) {
+						counter = answerMap.get(String.valueOf(--columnAlph) + String.valueOf(row));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row - 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row - 1), ++counter);
+						counter = answerMap.get(String.valueOf(++columnAlph) + String.valueOf(row - 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row - 1), ++counter);
+					} else {
+						counter = answerMap.get(String.valueOf(--columnAlph) + String.valueOf(row));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row - 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row - 1), ++counter);
+						counter = answerMap.get(String.valueOf(++columnAlph) + String.valueOf(row - 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row - 1), ++counter);
+						counter = answerMap.get(String.valueOf(++columnAlph) + String.valueOf(row - 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row - 1), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row), ++counter);
+					}
+				} else {
+					if (column.equals("a")) {
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row - 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row - 1), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row + 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row + 1), ++counter);
+						counter = answerMap.get(String.valueOf(++columnAlph) + String.valueOf(row - 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row - 1), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row + 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row + 1), ++counter);
+					} else if (column.equals(columnMax)) {
+						counter = answerMap.get(String.valueOf(--columnAlph) + String.valueOf(row - 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row - 1), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row + 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row + 1), ++counter);
+						counter = answerMap.get(String.valueOf(++columnAlph) + String.valueOf(row - 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row - 1), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row + 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row + 1), ++counter);
+					} else {
+						counter = answerMap.get(String.valueOf(--columnAlph) + String.valueOf(row - 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row - 1), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row + 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row + 1), ++counter);
+						counter = answerMap.get(String.valueOf(++columnAlph) + String.valueOf(row - 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row - 1), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row + 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row + 1), ++counter);
+						counter = answerMap.get(String.valueOf(++columnAlph) + String.valueOf(row - 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row - 1), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row), ++counter);
+						counter = answerMap.get(String.valueOf(columnAlph) + String.valueOf(row + 1));
+						answerMap.put(String.valueOf(columnAlph) + String.valueOf(row + 1), ++counter);
+					}
+				}
+			}
+		} catch (NumberFormatException e) {
+			System.out.println(e);
+		}
+			
 	}
 	
 }
